@@ -1,0 +1,14 @@
+# Example production-style remote backend for the dev environment.
+# Rename to backend.tf and remove the local backend block from main.tf
+# to use this. Left as an example so `terraform init` works out of the
+# box for local review without requiring a real S3 bucket / DynamoDB table.
+
+# terraform {
+#   backend "s3" {
+#     bucket         = "bookings-terraform-state-dev"
+#     key            = "envs/dev/terraform.tfstate"
+#     region         = "ap-south-1"
+#     dynamodb_table = "bookings-terraform-locks-dev"
+#     encrypt        = true
+#   }
+# }

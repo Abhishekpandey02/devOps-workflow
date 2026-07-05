@@ -1,19 +1,29 @@
-version: "3.8"
-
 services:
-  postgres:
-    image: postgres:14
-    container_name: hotel-postgres
-    restart: always
+  db:
+    image: postgres:16
+    container_name: hotel-bookings-db
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: hotel_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: app_password
+      POSTGRES_DB: bookings
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./database/migrations:/docker-entrypoint-initdb.d
+      - db_data:/var/lib/postgresql/data
+      # db/init contains a single init script that runs the migrations and
+      # then the seed data, in order, on first container start. (Postgres's
+      # docker-entrypoint-initdb.d hook only looks at *.sh/*.sql files placed
+      # directly inside it, not nested subfolders, so migrations/seed live
+      # alongside and are invoked from the init script.)
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+      - ./db/migrations:/migrations:ro
+      - ./db/seed:/seed:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app_user -d bookings"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
-  postgres_data:
+  db_data:
