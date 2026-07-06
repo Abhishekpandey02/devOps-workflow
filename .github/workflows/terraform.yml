@@ -1,6 +1,11 @@
 name: Terraform
 
 on:
+  push:
+    branches:
+      - main
+      - master
+
   pull_request:
     paths:
       - "infra/**"
@@ -14,101 +19,79 @@ jobs:
   terraform:
     name: Terraform (${{ matrix.env }})
     runs-on: ubuntu-latest
+
     strategy:
       fail-fast: false
       matrix:
-        env: [dev, prod]
+        env:
+          - dev
+          - prod
 
     defaults:
       run:
         working-directory: infra/envs/${{ matrix.env }}
 
     env:
-      # Dummy credentials so plan can run in plan-only / no-real-deploy mode.
-      # No actual AWS deployment happens in this workflow.
-      AWS_ACCESS_KEY_ID: "test"
-      AWS_SECRET_ACCESS_KEY: "test"
-      AWS_DEFAULT_REGION: "ap-south-1"
-      TF_VAR_db_password: ${{ secrets.TF_VAR_DB_PASSWORD || 'ci-plan-only-password' }}
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_DEFAULT_REGION: ap-south-1
+      TF_VAR_db_password: ci-plan-only-password
 
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "1.7.5"
+          terraform_version: 1.7.5
 
-      - name: Terraform fmt
+      - name: Terraform Version
+        run: terraform version
+
+      - name: Terraform Format Check
         id: fmt
         run: terraform fmt -check -recursive ../../..
-        continue-on-error: true
 
-      - name: Terraform init
+      - name: Terraform Init
         id: init
-        run: terraform init -backend=true
+        run: terraform init
 
-      - name: Terraform validate
+      - name: Terraform Validate
         id: validate
         run: terraform validate -no-color
 
-      - name: Terraform plan
+      - name: Terraform Plan
         id: plan
         run: terraform plan -refresh=false -no-color -out=tfplan
-        continue-on-error: true
 
-      - name: Save plan output
-        if: always()
-        run: terraform show -no-color tfplan > plan_output.txt || true
+      - name: Export Plan
+        run: terraform show -no-color tfplan > plan_output.txt
 
-      - name: Upload plan artifact
-        if: always()
+      - name: Upload Plan Artifact
         uses: actions/upload-artifact@v4
         with:
           name: terraform-plan-${{ matrix.env }}
           path: infra/envs/${{ matrix.env }}/plan_output.txt
 
-      - name: Comment plan on PR
-        if: always()
+      - name: Comment Plan on PR
+        if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            const path = 'infra/envs/${{ matrix.env }}/plan_output.txt';
-            let planOutput = 'No plan output was produced.';
-            try {
-              planOutput = fs.readFileSync(path, 'utf8');
-            } catch (e) {
-              // no-op, keep default message
-            }
-            const maxLen = 60000;
-            if (planOutput.length > maxLen) {
-              planOutput = planOutput.slice(0, maxLen) + '\n... (truncated, see workflow artifact for full output)';
-            }
-            const body = [
-              `### Terraform Plan - \`${{ matrix.env }}\``,
-              '',
-              `* fmt: \`${{ steps.fmt.outcome }}\``,
-              `* init: \`${{ steps.init.outcome }}\``,
-              `* validate: \`${{ steps.validate.outcome }}\``,
-              `* plan: \`${{ steps.plan.outcome }}\``,
-              '',
-              '<details><summary>Show plan</summary>',
-              '',
-              '```',
-              planOutput,
-              '```',
-              '</details>'
-            ].join('\n');
+            const plan = fs.readFileSync(
+              'infra/envs/${{ matrix.env }}/plan_output.txt',
+              'utf8'
+            );
 
             github.rest.issues.createComment({
-              issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body,
-            });
+              issue_number: context.issue.number,
+              body: `## Terraform Plan (${context.payload.pull_request.head.ref} - ${{ matrix.env }})
 
-      - name: Fail job if validate failed
-        if: steps.validate.outcome == 'failure'
-        run: exit 1
+\`\`\`
+${plan.substring(0,60000)}
+\`\`\``
+            });
