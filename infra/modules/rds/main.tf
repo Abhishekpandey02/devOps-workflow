@@ -37,9 +37,9 @@ resource "aws_db_instance" "this" {
   backup_window           = var.backup_window
   maintenance_window      = var.maintenance_window
 
-  multi_az            = var.multi_az
-  deletion_protection = var.deletion_protection
-  skip_final_snapshot  = var.deletion_protection ? false : true
+  multi_az                  = var.multi_az
+  deletion_protection       = var.deletion_protection
+  skip_final_snapshot       = var.deletion_protection ? false : true
   final_snapshot_identifier = var.deletion_protection ? "${var.name_prefix}-db-final-snapshot" : null
 
   performance_insights_enabled = var.performance_insights_enabled
