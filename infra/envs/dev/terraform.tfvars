@@ -11,13 +11,13 @@ task_cpu        = 256
 task_memory     = 512
 desired_count   = 1
 
-db_engine             = "postgres"
-db_engine_version     = "16.3"
-db_instance_class     = "db.t4g.micro"
-db_allocated_storage  = 20
-db_name               = "bookings"
-db_username           = "app_user"
-db_port               = 5432
+db_engine            = "postgres"
+db_engine_version    = "16.3"
+db_instance_class    = "db.t4g.micro"
+db_allocated_storage = 20
+db_name              = "bookings"
+db_username          = "app_user"
+db_port              = 5432
 
 # Dev reliability profile: shorter retention, no deletion protection
 db_backup_retention_period = 3
@@ -25,3 +25,8 @@ db_deletion_protection     = false
 
 # db_password should be supplied via TF_VAR_db_password or a local
 # untracked *.auto.tfvars file - never commit real credentials.
+
+availability_zones = [
+  "ap-south-1a",
+  "ap-south-1b"
+]

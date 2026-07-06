@@ -103,3 +103,7 @@ variable "db_deletion_protection" {
   type        = bool
   default     = false
 }
+
+variable "availability_zones" {
+  type = list(string)
+}

@@ -116,3 +116,8 @@ variable "db_multi_az" {
   type        = bool
   default     = true
 }
+
+variable "availability_zones" {
+  description = "Availability Zones"
+  type        = list(string)
+}

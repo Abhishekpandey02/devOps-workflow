@@ -19,6 +19,11 @@ terraform {
 provider "aws" {
   region = var.aws_region
 
+  # Plan-only mode
+  skip_credentials_validation = true
+  skip_requesting_account_id  = true
+  skip_metadata_api_check     = true
+
   default_tags {
     tags = local.common_tags
   }
@@ -40,6 +45,8 @@ module "network" {
   vpc_cidr             = var.vpc_cidr
   public_subnet_cidrs  = var.public_subnet_cidrs
   private_subnet_cidrs = var.private_subnet_cidrs
+  availability_zones = var.availability_zones
+
   enable_nat_gateway   = var.enable_nat_gateway
   container_port       = var.container_port
   db_port              = var.db_port

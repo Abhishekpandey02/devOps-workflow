@@ -27,3 +27,8 @@ db_multi_az                = true
 
 # db_password should be supplied via TF_VAR_db_password or a secrets
 # manager - never commit real credentials.
+
+availability_zones = [
+  "ap-south-1a",
+  "ap-south-1b"
+]
